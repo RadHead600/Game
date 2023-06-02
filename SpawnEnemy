@@ -1,0 +1,37 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class SpawnEnemy : MonoBehaviour
+{
+    [SerializeField] private List<GameObject> _spawnPoints = new List<GameObject>();
+    [SerializeField] private List<GameObject> _patrolPoints = new List<GameObject>();
+    [SerializeField] private int _countOfEnemies;
+    [SerializeField] private float _spawnCooldown;
+    [SerializeField] private GameObject _enemyPref;
+
+    private void Start()
+    {
+        StartCoroutine(Spawn());
+    }
+
+    private IEnumerator Spawn()
+    {
+        int index = 0;
+
+        for (int i = 0; i < _countOfEnemies; i++)
+        {
+            if (index >= _spawnPoints.Count) index = 0;
+            GameObject enemy = Instantiate(_enemyPref, _spawnPoints[index].transform.position, Quaternion.identity);
+
+            foreach (var item in _patrolPoints)
+            {
+                enemy.GetComponent<Enemy>().patrolPoints.Add(item);
+            }
+
+            yield return new WaitForSeconds(_spawnCooldown);
+
+            index++;
+        }
+    }
+}

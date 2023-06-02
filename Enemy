@@ -1,0 +1,62 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Enemy : MonoBehaviour
+{
+    [SerializeField] private float _speed;
+    [SerializeField] private GameObject _sprite;
+    [SerializeField] private Transform _groundCheck;
+
+    [NonSerialized] public List<GameObject> patrolPoints = new List<GameObject>();
+
+    private Rigidbody2D _rigidbody;
+    private bool _isGoRight = true;
+    private bool _isGrounded = false;
+    private int _index = 0;
+
+    private void Start()
+    {
+        _rigidbody = GetComponent<Rigidbody2D>();
+    }
+
+    private void Update()
+    {
+        if (patrolPoints[_index].transform.position.x > transform.position.x) _isGoRight = true;
+        else _isGoRight = false;
+
+        if (Mathf.Abs(patrolPoints[_index].transform.position.x - transform.position.x) < 0.5f) _index++;
+        if (_index >= patrolPoints.Count) _index = 0;
+    }
+
+    private void FixedUpdate()
+    {
+        CheckGround();
+        Flip(_isGoRight);
+
+        if (_isGrounded)
+        {
+            if (_isGoRight) _rigidbody.velocity = new Vector2(_speed, _rigidbody.velocity.y);
+            else _rigidbody.velocity = new Vector2(-1 * _speed, _rigidbody.velocity.y);
+        }
+
+    }
+    private void Flip(bool isGoRight)
+    {
+        if (isGoRight)
+            _sprite.transform.localScale = new Vector3(-1f, 1f, 1f);
+        else
+            _sprite.transform.localScale = new Vector3(1f, 1f, 1f);
+    }
+
+    private void CheckGround()
+    {
+        float groundCheckPosition = 0.2f
+
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(_groundCheck.position, groundCheckPosition);
+
+        if (colliders.Length > 1) _isGrounded = true;
+        else _isGrounded = false;
+    }
+}

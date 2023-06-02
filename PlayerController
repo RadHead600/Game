@@ -1,0 +1,100 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class PlayerController : MonoBehaviour
+{
+    [SerializeField] private float _speed;
+    [SerializeField] private float _jumpheight;
+    [SerializeField] private Transform _groundCheck;
+    [SerializeField] private GameObject _sprite;
+    [SerializeField] private Text _coinText;
+    [SerializeField] private GameObject _signaling;
+
+    private bool _isGrounded = false;
+    private int _coins = 0;
+    private float _volume = 0;
+    private float _maxVolume = 0.2f;
+    private bool _isSignalingWork = false;
+
+    private Rigidbody2D _rigidbody;
+    private Animator _anim;
+    private AudioSource _audioSource;
+
+    private void Start()
+    {
+        _rigidbody = GetComponent<Rigidbody2D>();
+        _anim = GetComponent<Animator>();
+        _audioSource = _signaling.GetComponent<AudioSource>();
+        _audioSource.volume = 0f;
+        StartCoroutine(SignalingVolumeChange());
+    }
+
+    private void Update()
+    {
+        CheckGround();
+
+        float x = Input.GetAxis("Horizontal");
+
+        if (x > 0.1f || x < -0.1f) _anim.SetBool("isRun", true);
+        else _anim.SetBool("isRun", false);
+
+        Flip(x);
+
+        float velocityScale = 100f;
+
+        _rigidbody.velocity = new Vector2(x * _speed * Time.deltaTime * velocityScale, _rigidbody.velocity.y);
+
+        if (Input.GetKeyDown(KeyCode.Space) && _isGrounded)
+        {
+            _rigidbody.AddForce(transform.up * _jumpheight, ForceMode2D.Impulse);
+            _anim.SetTrigger("isJump");
+        }
+
+    }
+    private void Flip(float x)
+    {
+        if (x > 0)
+            _sprite.transform.localScale = new Vector3(-1f, 1f, 1f);
+        else if (x < 0)
+            _sprite.transform.localScale = new Vector3(1f, 1f, 1f);
+    }
+    private void CheckGround()
+    {
+        float groundCheckPosition = 0.2f;
+
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(_groundCheck.position, groundCheckPosition);
+
+        if (colliders.Length > 1) _isGrounded = true;
+        else _isGrounded = false;
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "Coin")
+        {
+            _coins++;
+            _coinText.text = _coins.ToString();
+            collision.gameObject.SetActive(false);
+        }
+
+        if (collision.gameObject.tag == "House") _isSignalingWork = true;
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "House") _isSignalingWork = false;
+    }
+
+    private IEnumerator SignalingVolumeChange()
+    {
+        while (true)
+        {
+            yield return new WaitForEndOfFrame();
+
+            if (_isSignalingWork) _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, _maxVolume, 0.1f * Time.deltaTime);
+            else _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, 0f, 0.1f * Time.deltaTime);
+        }
+    }
+}
